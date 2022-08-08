@@ -19,6 +19,12 @@ satisfy pred = Parser $
 char :: Char -> Parser Char
 char x = satisfy (== x)
 
+eof :: Parser ()
+eof = Parser $
+  \case
+    (c : cs) -> empty
+    "" -> return ((), "")
+
 instance Alternative Parser where
   empty = Parser $ pure empty
   f <|> g = Parser $ \s ->
@@ -32,6 +38,12 @@ instance Applicative Parser where
     (f, s1) <- runParse p s
     (a, s2) <- runParse q s1
     pure (f a, s2)
+
+instance Monad Parser where
+  return = pure
+  p >>= q = Parser $ \s -> do
+    (a, s') <- runParse p s
+    runParse (q a) s'
 
 string :: String -> Parser String
 string [] = pure []
@@ -109,3 +121,15 @@ token = do
 
 consumeRemaining :: Parser String
 consumeRemaining = many (satisfy (const True))
+
+bool :: Parser Bool
+bool = (string "true" $> True) <|> (string "false" $> False)
+
+bracketed :: Parser a -> Parser a
+bracketed parser = do
+  char '('
+  many whitespace
+  output <- parser
+  many whitespace
+  char ')'
+  return output

@@ -8,6 +8,7 @@ module Commands where
 import Control.Applicative
 import Parser
 
+-- TODO: if we need row/column operations, turn cellName into a non-string type
 data Command = Edit {cellName :: String, value :: String} | PrintCellRaw String | PrintValue String deriving (Show)
 
 commandParser :: Parser Command
@@ -15,18 +16,20 @@ commandParser = editParser <|> printParser <|> valueParser
   where
     editParser = do
       char 'e'
-      many whitespace
+      some whitespace
       cellName <- token
-      many whitespace
+      some whitespace
       value <- consumeRemaining
       return $ Edit cellName value
     printParser = do
       char 'p'
-      many whitespace
+      some whitespace
       cellName <- token
       return $ PrintCellRaw cellName
     valueParser = do
       char 'v'
-      many whitespace
+      some whitespace
       cellName <- token
       return $ PrintValue cellName
+
+
