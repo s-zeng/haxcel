@@ -1,4 +1,4 @@
-# Changelog for lidointerview
+# Changelog for haxcel
 
 All notable changes to this project will be documented in this file.
 
