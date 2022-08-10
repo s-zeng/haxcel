@@ -25,8 +25,8 @@ loop table = do
       return table
     Just (PrintValue cellName, "") -> do
       case Map.lookup cellName table of
-        Just value -> case runParse ParseValue.parser value of
-          Just (result, "") -> print (derivedValue result)
+        Just value -> case runParse (ParseValue.parser table) value of
+          Just (result, "") -> putStrLn (derivedValue result)
           Just _ -> putStrLn "malformed or maltyped input..."
           Nothing -> putStrLn "malformed or maltyped input"
         Nothing -> putStrLn "cell not found"
