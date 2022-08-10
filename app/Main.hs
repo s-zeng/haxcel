@@ -1,6 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-
 module Main where
 
 import Commands
@@ -10,7 +7,7 @@ import Parser
 import Relude
 
 loop :: StateT CellTable IO ()
-loop = do
+loop = forever $ do
   putStr "> "
   hFlush stdout
   command <- toString <$> getLine
@@ -30,7 +27,6 @@ loop = do
         Nothing -> putStrLn "cell not found"
     Just _ -> putStrLn "error: bad command..."
     Nothing -> putStrLn "error: bad command"
-  loop
 
 main :: IO ()
 main = evalStateT loop Map.empty

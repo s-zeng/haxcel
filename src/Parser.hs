@@ -1,8 +1,3 @@
-{-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-
 module Parser where
 
 import Relude
@@ -75,12 +70,10 @@ integer =
   zero <|> do
     minus <- zeroOrOne (char '-')
     num <- natural
-    pure $ case minus of
-      Nothing -> num
-      Just _ -> negate num
+    return $ fromMaybe num (negate num <$ minus)
 
 whitespace :: Parser Char
-whitespace = char ' ' <|> char '\t' <|> char '\n' <|> char '\r'
+whitespace = oneOfChar " \t\r\n"
 
 floating :: Parser Double
 floating =

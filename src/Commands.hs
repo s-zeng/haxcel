@@ -1,9 +1,3 @@
-{-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Use <$>" #-}
-
 module Commands where
 
 import Parser
@@ -24,15 +18,12 @@ commandParser = editParser <|> printParser <|> valueParser
       some whitespace
       cellName <- token
       some whitespace
-      value <- consumeRemaining
-      return $ Edit cellName value
+      Edit cellName <$> consumeRemaining
     printParser = do
       char 'p'
       some whitespace
-      cellName <- token
-      return $ PrintCellRaw cellName
+      PrintCellRaw <$> token
     valueParser = do
       char 'v'
       some whitespace
-      cellName <- token
-      return $ PrintValue cellName
+      PrintValue <$> token

@@ -1,11 +1,3 @@
-{-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE GADTs #-}
-{-# HLINT ignore "Redundant return" #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
 module ParseValue where
 
 import qualified Data.Map as Map
@@ -78,8 +70,7 @@ functionCall cellTable = do
       many whitespace
       char ','
       many whitespace
-      nextArg <- parser cellTable
-      return nextArg
+      parser cellTable
     optional $ char ','
     return (functionName, firstArg : restOfArgs)
 

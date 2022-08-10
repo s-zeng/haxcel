@@ -1,7 +1,3 @@
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-
 module Interp where
 
 import Relude hiding (Op, Sum)
