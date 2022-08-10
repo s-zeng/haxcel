@@ -3,22 +3,15 @@
 {-# LANGUAGE GADTs #-}
 {-# HLINT ignore "Redundant return" #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module ParseValue where
 
-import Control.Applicative
-import Control.Monad
-import Data.Coerce
-import Data.Data
-import Data.Function
-import Data.Functor
-import Data.List
-import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Maybe
 import Interp
 import Parser
+import Relude hiding (Op, Sum, bool)
 
 data ParsedValue = forall a. Show a => ParsedValue (Value a)
 
@@ -74,22 +67,23 @@ chainOp arg op = do
     return $ \nextArg -> InfixOp o nextArg a
   return $ foldl' (&) first_arg rest
 
-functionCall :: Map String String -> Parser (String, [ParsedValue])
+type CellTable = Map String String
+
+functionCall :: CellTable -> Parser (String, [ParsedValue])
 functionCall cellTable = do
   functionName <- token
-  char '('
-  firstArg <- parser cellTable
-  restOfArgs <- many $ do
-    many whitespace
-    char ','
-    many whitespace
-    nextArg <- parser cellTable
-    return nextArg
-  optional $ char ','
-  char ')'
-  return (functionName, firstArg : restOfArgs)
+  bracketed $ do
+    firstArg <- parser cellTable
+    restOfArgs <- many $ do
+      many whitespace
+      char ','
+      many whitespace
+      nextArg <- parser cellTable
+      return nextArg
+    optional $ char ','
+    return (functionName, firstArg : restOfArgs)
 
-parser :: Map String String -> Parser ParsedValue
+parser :: CellTable -> Parser ParsedValue
 parser cellTable =
   oneOf
     [ ParsedValue <$> mathExpr,
@@ -106,23 +100,24 @@ parser cellTable =
     str = StringLiteral <$> consumeRemaining
     cellRef = do
       cellName <- token
-      case Map.lookup cellName cellTable of
-        Nothing -> empty
-        Just val -> case runParse (parser cellTable) val of
-          Nothing -> empty
-          Just (res, _) -> return res
+      fromMaybe empty $ do
+        val <- Map.lookup cellName cellTable
+        (res, _) <- runParse (parser cellTable) val
+        Just $ return res
     mathTerm =
-      float
-        <|> int
-        <|> bracketed mathExpr
-        <|> sumFunction
-        <|> do
-          val <- ifExpr <|> cellRef
-          maybe empty return (numericValue val)
+      oneOf
+        [ float,
+          int,
+          bracketed mathExpr,
+          sumFunction,
+          do
+            val <- ifExpr <|> cellRef
+            maybe empty return (numericValue val)
+        ]
     mathFactor = chainOp mathTerm mulOp
     mathExpr = chainOp mathFactor addOp
     sumFunction = do
-      ~(name, args) <- functionCall cellTable
+      (name, args) <- functionCall cellTable
       let numericArgs = mapMaybe numericValue args
       guard $ length numericArgs == length args
       guard $ name == "sum"

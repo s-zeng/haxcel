@@ -1,49 +1,38 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Parser where
 
-import Control.Applicative
-import Data.Foldable
-import Data.Functor
+import Relude
+import qualified Relude.Unsafe as Unsafe
 
-newtype Parser a = Parser {runParse :: String -> Maybe (a, String)} deriving (Functor)
+newtype Parser a = Parser {getParser :: StateT String Maybe a}
+  deriving
+    ( Functor,
+      Applicative,
+      Monad,
+      Alternative
+    )
+
+runParse :: Parser a -> String -> Maybe (a, String)
+runParse = runStateT . getParser
 
 satisfy :: (Char -> Bool) -> Parser Char
-satisfy pred = Parser $
-  \case
-    (c : cs) | pred c -> return (c, cs)
-    _ -> empty
+satisfy pred = Parser $ do
+  (c : cs) <- get
+  guard $ pred c
+  put cs
+  return c
 
 char :: Char -> Parser Char
 char x = satisfy (== x)
 
 eof :: Parser ()
-eof = Parser $
-  \case
-    (c : cs) -> empty
-    "" -> return ((), "")
-
-instance Alternative Parser where
-  empty = Parser $ pure empty
-  f <|> g = Parser $ \s ->
-    case runParse f s of
-      Nothing -> runParse g s
-      res -> res
-
-instance Applicative Parser where
-  pure x = Parser $ \s -> pure (x, s)
-  p <*> q = Parser $ \s -> do
-    (f, s1) <- runParse p s
-    (a, s2) <- runParse q s1
-    pure (f a, s2)
-
-instance Monad Parser where
-  return = pure
-  p >>= q = Parser $ \s -> do
-    (a, s') <- runParse p s
-    runParse (q a) s'
+eof = Parser $ do
+  "" <- get
+  return ()
 
 string :: String -> Parser String
 string [] = pure []
@@ -67,25 +56,13 @@ alphabetic = oneOfChar ['A' .. 'Z'] <|> oneOfChar ['a' .. 'z']
 zeroOrOne :: Parser a -> Parser (Maybe a)
 zeroOrOne = optional
 
-isNot :: Parser a -> Parser ()
-isNot f = Parser $ \s -> case runParse f s of
-  Nothing -> pure ((), s)
-  _ -> Nothing
-
-parens :: Parser a -> Parser a
-parens f = do
-  char '('
-  x <- f
-  char ')'
-  pure x
-
 digit, leadingDigit :: Parser Char
 digit = oneOfChar ['0' .. '9']
 leadingDigit = oneOfChar ['1' .. '9']
 
 natural :: Parser Integer
 natural =
-  read <$> do
+  Unsafe.read <$> do
     lead <- leadingDigit
     rest <- many digit
     pure $ lead : rest
@@ -107,7 +84,7 @@ whitespace = char ' ' <|> char '\t' <|> char '\n' <|> char '\r'
 
 floating :: Parser Double
 floating =
-  read <$> do
+  Unsafe.read <$> do
     lead <- integer
     char '.'
     decimals <- some digit

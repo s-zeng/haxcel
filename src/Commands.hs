@@ -1,15 +1,20 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use <$>" #-}
 
 module Commands where
 
-import Control.Applicative
 import Parser
+import Relude
 
 -- TODO: if we need row/column operations, turn cellName into a non-string type
-data Command = Edit {cellName :: String, value :: String} | PrintCellRaw String | PrintValue String deriving (Show)
+data Command
+  = Edit {cellName :: String, value :: String}
+  | PrintCellRaw String
+  | PrintValue String
+  deriving (Show)
 
 commandParser :: Parser Command
 commandParser = editParser <|> printParser <|> valueParser
@@ -31,5 +36,3 @@ commandParser = editParser <|> printParser <|> valueParser
       some whitespace
       cellName <- token
       return $ PrintValue cellName
-
-

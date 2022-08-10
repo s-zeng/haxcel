@@ -37,7 +37,7 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
-    , recursion-schemes
+    , relude
   default-language: Haskell2010
 
 executable lidointerview-exe
@@ -51,7 +51,7 @@ executable lidointerview-exe
       base >=4.7 && <5
     , containers
     , lidointerview
-    , recursion-schemes
+    , relude
   default-language: Haskell2010
 
 test-suite lidointerview-test
@@ -66,5 +66,5 @@ test-suite lidointerview-test
       base >=4.7 && <5
     , containers
     , lidointerview
-    , recursion-schemes
+    , relude
   default-language: Haskell2010

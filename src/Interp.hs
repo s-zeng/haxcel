@@ -1,9 +1,10 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Interp where
 
-import Data.List
+import Relude hiding (Op, Sum)
 
 data Op = Plus | Minus | Times deriving (Show)
 
@@ -15,6 +16,7 @@ data Value a where
   FloatLiteral :: Double -> Value Number
   StringLiteral :: String -> Value String
   InfixOp :: Op -> Value Number -> Value Number -> Value Number
+  -- write a destructuring free monad?
   Sum :: [Value Number] -> Value Number
   If :: Value Bool -> Value a -> Value a -> Value a
 

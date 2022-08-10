@@ -1,39 +1,36 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Main where
 
 import Commands
-import Data.Map (Map)
 import qualified Data.Map as Map
 import ParseValue
 import Parser
-import System.IO
+import Relude
 
-type CellTable = Map String String
-
-loop :: CellTable -> IO ()
-loop table = do
+loop :: StateT CellTable IO ()
+loop = do
   putStr "> "
   hFlush stdout
-  command <- getLine
-  newTable <- case runParse commandParser command of
-    Just (Edit {cellName, value}, "") -> return $ Map.insert cellName value table
+  command <- toString <$> getLine
+  curTable <- get
+  case runParse commandParser command of
+    Just (Edit {cellName, value}, "") -> modify (Map.insert cellName value)
     Just (PrintCellRaw cellName, "") -> do
-      case Map.lookup cellName table of
+      case Map.lookup cellName curTable of
         Just value -> print value
         Nothing -> putStrLn "cell not found"
-      return table
     Just (PrintValue cellName, "") -> do
-      case Map.lookup cellName table of
-        Just value -> case runParse (ParseValue.parser table) value of
+      case Map.lookup cellName curTable of
+        Just value -> case runParse (ParseValue.parser curTable) value of
           Just (result, "") -> putStrLn (derivedValue result)
           Just _ -> putStrLn "malformed or maltyped input..."
           Nothing -> putStrLn "malformed or maltyped input"
         Nothing -> putStrLn "cell not found"
-      return table
-    Just _ -> putStrLn "error: bad command..." >> return table
-    Nothing -> putStrLn "error: bad command" >> return table
-  loop newTable
+    Just _ -> putStrLn "error: bad command..."
+    Nothing -> putStrLn "error: bad command"
+  loop
 
 main :: IO ()
-main = loop Map.empty
+main = evalStateT loop Map.empty
