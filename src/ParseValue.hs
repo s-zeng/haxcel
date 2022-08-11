@@ -9,42 +9,8 @@ data ParsedValue = forall a. Show a => ParsedValue (Value a)
 
 deriving instance Show ParsedValue
 
--- ugly :(
-numericValue :: ParsedValue -> Maybe (Value Number)
-numericValue (ParsedValue (BoolLiteral _)) = Nothing
-numericValue (ParsedValue l@(IntLiteral _)) = Just l
-numericValue (ParsedValue l@(FloatLiteral _)) = Just l
-numericValue (ParsedValue (StringLiteral _)) = Nothing
-numericValue (ParsedValue l@(InfixOp {})) = Just l
-numericValue (ParsedValue l@(Sum _)) = Just l
-numericValue (ParsedValue l@(If cond a b)) = do
-  valA <- numericValue (ParsedValue a)
-  valB <- numericValue (ParsedValue b)
-  return $ If cond valA valB
-
-boolValue :: ParsedValue -> Maybe (Value Bool)
-boolValue (ParsedValue l@(BoolLiteral _)) = Just l
-boolValue (ParsedValue (IntLiteral _)) = Nothing
-boolValue (ParsedValue (FloatLiteral _)) = Nothing
-boolValue (ParsedValue (StringLiteral _)) = Nothing
-boolValue (ParsedValue (InfixOp {})) = Nothing
-boolValue (ParsedValue (Sum _)) = Nothing
-boolValue (ParsedValue l@(If cond a b)) = do
-  valA <- boolValue (ParsedValue a)
-  valB <- boolValue (ParsedValue b)
-  return $ If cond valA valB
-
-stringValue :: ParsedValue -> Maybe (Value String)
-stringValue (ParsedValue (BoolLiteral _)) = Nothing
-stringValue (ParsedValue (IntLiteral _)) = Nothing
-stringValue (ParsedValue (FloatLiteral _)) = Nothing
-stringValue (ParsedValue l@(StringLiteral _)) = Just l
-stringValue (ParsedValue (InfixOp {})) = Nothing
-stringValue (ParsedValue (Sum _)) = Nothing
-stringValue (ParsedValue (If cond a b)) = do
-  valA <- stringValue (ParsedValue a)
-  valB <- stringValue (ParsedValue b)
-  return $ If cond valA valB
+extract :: (forall a. Value a -> Maybe (Value b)) -> ParsedValue -> Maybe (Value b)
+extract extractor (ParsedValue p) = extractor p
 
 addOp, mulOp :: Parser Op
 addOp = (char '+' $> Plus) <|> (char '-' $> Minus)
@@ -103,13 +69,13 @@ parser cellTable =
           sumFunction,
           do
             val <- ifExpr <|> cellRef
-            maybe empty return (numericValue val)
+            maybe empty return (extract numericValue val)
         ]
     mathFactor = chainOp mathTerm mulOp
     mathExpr = chainOp mathFactor addOp
     sumFunction = do
       (name, args) <- functionCall cellTable
-      let numericArgs = mapMaybe numericValue args
+      let numericArgs = mapMaybe (extract numericValue) args
       guard $ length numericArgs == length args
       guard $ name == "sum"
       return $ Sum numericArgs
@@ -118,11 +84,11 @@ parser cellTable =
       guard $ name == "if"
 
       -- ugly :(
-      case map boolValue args of
+      case map (extract boolValue) args of
         [Just cond, Just a, Just b] -> return . ParsedValue $ If cond a b
-        [Just cond, Nothing, Nothing] -> case mapMaybe numericValue args of
+        [Just cond, Nothing, Nothing] -> case mapMaybe (extract numericValue) args of
           [a, b] -> return . ParsedValue $ If cond a b
-          _ -> case mapMaybe stringValue args of
+          _ -> case mapMaybe (extract stringValue) args of
             [a, b] -> return . ParsedValue $ If cond a b
             _ -> empty
         _ -> empty
