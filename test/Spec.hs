@@ -14,8 +14,13 @@ import Polysemy.Writer
 import Relude hiding (evalState, lines, unlines)
 import Test.HUnit
 
+type LineNumber = Natural
+
 -- | Runs the command line without IO
-runCommandLine :: [String] -> [String]
+-- Outputs a list of outputs, tagged w/ the line number of input that corresponds to that output
+-- i.e. if `p a1` is the second lind of input entered, then `(2, <a1contents>)` will be
+-- the corresponding entry in the result of this function
+runCommandLine :: [String] -> [(LineNumber, String)]
 runCommandLine inputs =
   commandLine
     & ( runInputList inputs -- handle input by getting inputs from given input list
@@ -24,9 +29,15 @@ runCommandLine inputs =
           >>> runOutputList -- handle output commands by pushing onto a list
           >>> run -- get the output list
           >>> fst -- discard unwanted error value
-          >>> filter (/= "> ") -- get rid of prompts from our output
-          >>> filter (/= "\n") -- get rid of newlines from our output
+          >>> map (0,) -- insert numbers for numberPrompts to use
+          >>> numberPrompts -- determine which line number of input corresponds to each output
+          >>> filter ((/= "> ") . snd) -- get rid of prompts from our output
+          >>> filter ((/= "\n") . snd) -- get rid of newlines from our output
       )
+  where
+    numberPrompts [] = []
+    numberPrompts ((i, "> ") : rest) = (i + 1, "> ") : map (first succ) (numberPrompts rest)
+    numberPrompts ((i, str) : rest) = (i, str) : numberPrompts rest
 
 test1 =
   TestCase
@@ -49,14 +60,14 @@ test1 =
               "v a5"
             ]
         )
-        [ "3+4*5*6-7+8",
-          "Int 124",
-          "0.4-100*3.8+7",
-          "Floating (-372.6)",
-          "False",
-          "True",
-          "Floating 496.6",
-          "Floating 138085.56"
+        [ (2, "3+4*5*6-7+8"),
+          (3, "Int 124"),
+          (5, "0.4-100*3.8+7"),
+          (6, "Floating (-372.6)"),
+          (8, "False"),
+          (10, "True"),
+          (12, "Floating 496.6"),
+          (14, "Floating 138085.56")
         ]
     )
 
