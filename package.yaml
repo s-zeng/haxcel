@@ -25,6 +25,7 @@ dependencies:
 - containers
 - polysemy
 - polysemy-plugin
+- recursion-schemes
 - relude
 
 default-extensions:

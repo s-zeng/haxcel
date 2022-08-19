@@ -1,15 +1,17 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
 import Commands
+import Data.Functor.Foldable
 import Data.List
 import qualified Data.Map as Map
 import Polysemy
 import Polysemy.Fail
 import Polysemy.Input
 import Polysemy.Output
-import Polysemy.State
+import Polysemy.State hiding (get)
 import Polysemy.Writer
 import Relude hiding (evalState, lines, unlines)
 import Test.HUnit
@@ -29,15 +31,24 @@ runCommandLine inputs =
           >>> runOutputList -- handle output commands by pushing onto a list
           >>> run -- get the output list
           >>> fst -- discard unwanted error value
-          >>> map (0,) -- insert numbers for numberPrompts to use
           >>> numberPrompts -- determine which line number of input corresponds to each output
           >>> filter ((/= "> ") . snd) -- get rid of prompts from our output
           >>> filter ((/= "\n") . snd) -- get rid of newlines from our output
       )
   where
-    numberPrompts [] = []
-    numberPrompts ((i, "> ") : rest) = (i + 1, "> ") : map (first succ) (numberPrompts rest)
-    numberPrompts ((i, str) : rest) = (i, str) : numberPrompts rest
+    numberPrompts =
+      usingReader 0 . cataA \case
+        Nil -> return []
+        -- if we found a prompt, then increment the index of everything after
+        -- and including that element of the output
+        Cons "> " rest -> do
+          i <- ask -- `ask` asks for calculated line number of current list element
+          updated <- local (+ 1) rest -- calculate the remaining line numbers, incremented by 1
+          return $ (i + 1, "> ") : updated
+        Cons elem rest -> do
+          i <- ask
+          remaining <- rest
+          return $ (i, elem) : remaining
 
 test1 =
   TestCase
