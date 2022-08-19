@@ -23,7 +23,7 @@ runCommandLine inputs =
           >>> runFail -- stop outputting when explicit failure is hit
           >>> runOutputList -- handle output commands by pushing onto a list
           >>> run -- get the output list
-          >>> fst -- discard unwanted () value
+          >>> fst -- discard unwanted error value
           >>> filter (/= "> ") -- get rid of prompts from our output
           >>> filter (/= "\n") -- get rid of newlines from our output
       )
