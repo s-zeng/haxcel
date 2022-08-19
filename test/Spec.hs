@@ -45,10 +45,7 @@ runCommandLine inputs =
           i <- ask -- `ask` asks for calculated line number of current list element
           updated <- local (+ 1) rest -- calculate the remaining line numbers, incremented by 1
           return $ (i + 1, "> ") : updated
-        Cons elem rest -> do
-          i <- ask
-          remaining <- rest
-          return $ (i, elem) : remaining
+        Cons elem rest -> liftA2 (:) ((,elem) <$> ask) rest -- annotate elem with the current index and proceed with the rest without incrementing
 
 test1 =
   TestCase
