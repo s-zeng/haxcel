@@ -1,32 +1,21 @@
 module Main where
 
 import Commands
+import Control.Exception
 import qualified Data.Map as Map
-import ParseValue
-import Parser
-import Relude
-
-loop :: StateT CellTable IO ()
-loop = forever $ do
-  putStr "> "
-  hFlush stdout
-  command <- toString <$> getLine
-  curTable <- get
-  case runParse commandParser command of
-    Just (Edit {cellName, value}, "") -> modify (Map.insert cellName value)
-    Just (PrintCellRaw cellName, "") -> do
-      case Map.lookup cellName curTable of
-        Just value -> print value
-        Nothing -> putStrLn "cell not found"
-    Just (PrintValue cellName, "") -> do
-      case Map.lookup cellName curTable of
-        Just value -> case runParse (ParseValue.parser curTable) value of
-          Just (result, "") -> putStrLn (derivedValue result)
-          Just _ -> putStrLn "malformed or maltyped input..."
-          Nothing -> putStrLn "malformed or maltyped input"
-        Nothing -> putStrLn "cell not found"
-    Just _ -> putStrLn "error: bad command..."
-    Nothing -> putStrLn "error: bad command"
+import Polysemy
+import Polysemy.Fail
+import Polysemy.Input
+import Polysemy.Output
+import Polysemy.State
+import Relude hiding (evalState)
 
 main :: IO ()
-main = evalStateT loop Map.empty
+main =
+  commandLine -- `loop` from above goes through the following handlers:
+    & ( runInputSem (embed $ Just . toString <$> getLine) -- handle input with the `getLine` function
+          >>> runOutputSem (\str -> embed (putStr str) >> embed (hFlush stdout)) -- handle output with the `putStr` function, and make sure we flush stdout
+          >>> evalState Map.empty -- initialize state with an empty map
+          >>> failToEmbed -- translate explicit failures to crashes
+          >>> runM -- run the IO actions!
+      )

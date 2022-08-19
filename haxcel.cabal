@@ -72,8 +72,11 @@ library
       TypeSynonymInstances
       ViewPatterns
   build-depends:
-      base >=4.7 && <5
+      HUnit
+    , base >=4.7 && <5
     , containers
+    , polysemy
+    , polysemy-plugin
     , relude
   default-language: Haskell2010
 
@@ -121,11 +124,14 @@ executable haxcel-exe
       TypeFamilies
       TypeSynonymInstances
       ViewPatterns
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -fplugin=Polysemy.Plugin
   build-depends:
-      base >=4.7 && <5
+      HUnit
+    , base >=4.7 && <5
     , containers
     , haxcel
+    , polysemy
+    , polysemy-plugin
     , relude
   default-language: Haskell2010
 
@@ -174,10 +180,13 @@ test-suite haxcel-test
       TypeFamilies
       TypeSynonymInstances
       ViewPatterns
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -fplugin=Polysemy.Plugin
   build-depends:
-      base >=4.7 && <5
+      HUnit
+    , base >=4.7 && <5
     , containers
     , haxcel
+    , polysemy
+    , polysemy-plugin
     , relude
   default-language: Haskell2010

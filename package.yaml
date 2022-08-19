@@ -21,7 +21,10 @@ description:         Please see the README on GitHub at <https://github.com/s-ze
 
 dependencies:
 - base >= 4.7 && < 5
+- HUnit
 - containers
+- polysemy
+- polysemy-plugin
 - relude
 
 default-extensions:
@@ -75,6 +78,7 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -fplugin=Polysemy.Plugin
     dependencies:
     - haxcel
 
@@ -86,5 +90,6 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -fplugin=Polysemy.Plugin
     dependencies:
     - haxcel
